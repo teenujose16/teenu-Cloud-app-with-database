@@ -6,9 +6,6 @@ from .models import Course, Lesson, Instructor, Learner
 class ChoiceInline(admin.StackedInline):
     model = Choice
     extra = 5
-class QuestionInline(admin.StackedInline):
-    model = Question
-
 class LessonInline(admin.StackedInline):
     model = Lesson
     extra = 5
