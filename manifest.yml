@@ -1,11 +1,11 @@
   applications:
   - name: onlinecourse
     routes:
-      - route: TeenusDBonlinecourse.apic.eu-gb.mybluemix.net
+      - route: teenusdbonlinecourse.apic.eu-gb.mybluemix.net/onlinecourse
     memory: 128M
     buildpack: python_buildpack
   - name: onlinecourse-nginx
     routes:
-      - route: TeenusDBonlinecourse.apic.eu-gb.mybluemix.net/static
+      - route: teenusdbonlinecourse.apic.eu-gb.mybluemix.net/onlinecourse/static
     memory: 128M
     buildpack: staticfile_buildpack
