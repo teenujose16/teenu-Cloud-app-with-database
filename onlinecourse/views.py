@@ -111,62 +111,69 @@ def enroll(request, course_id):
          # Add each selected choice object to the submission object
          # Redirect to show_exam_result with the submission id
 def extract_answers(request):
-    sub_answers = []
-    for key in request.POST:
-        if key.startswith('choice'):
-            choice_id = request.POST[key]
-            choice = Choice.objects.get(id=int(choice_id))
-            sub_answers.append(choice)
-    return sub_answers        
-
+   submitted_anwsers = []
+   for key in request.POST:
+       if key.startswith('choice'):
+           value = request.POST[key]
+           choice_id = int(value)
+           submitted_anwsers.append(choice_id)
+   return submitted_anwsers
 
 
 
 
 def submit(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
     user = request.user
-    course = Course.objects.get(pk=course_id)
-    enrollment = Enrollment.objects.get(user=user,course=course)
-    submission=Submission.objects.create(enrollment=enrollment)
-    ans = extract_answers(request)
-    submission.choices.set(ans)
-    submission.save()
-    return HttpResponseRedirect(reverse(viewname='onlinecourse:exam_result',args=(course.id,submission.id)))
-# <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
-# you may implement it based on the following logic:
-        # Get course and submission based on their ids
-        # Get the selected choice ids from the submission record
-        # For each selected choice, check if it is a correct answer or not
-        # Calculate the total score
-def exam_result(request, course_id, submission_id):
-    course = get_object_or_404(Course,pk=course_id)
-    submission = get_object_or_404(Submission, pk=submission_id)
-    context={}
-    context['course']=course
-    context['submission'] = submission_id
-    choices =[]
-    for choice in submission.choices.all():
-        if choice.is_true:
-            msg='alert-success'
-        else:
-            msg='alert-danger'
-        choices.append([choice.q.id,choice.c,msg])        
-    questions = Question.objects.filter(course=course)
-    grade=0
-    maxgrade=0
-    allquestions=[]
-    for question in questions:
-        maxgrade+=question.grade
-        note=0
-        if question.is_get_score(submission.choices.all()):
-            note=question.grade
-            grade += question.grade
-        allquestions.append([question.id,question.q,note,question.grade])    
-    grade = round(grade/maxgrade)*100
-    context['grade']=grade
-    context['allquestions']=allquestions
-    context['choices']=choices
-    return render(request,'onlinecourse/exam_result_bootstrap.html',context)
+    enrollment = Enrollment.objects.filter(user=user, course=course).get()
+   
+    submission = Submission.objects.create(enrollment_id = enrollment.id )
+
+    answers =  extract_answers(request)
+    for a in answers:
+        temp_c = Choice.objects.filter(id = int(a)).get()
+        submission.choices.add(temp_c)
+
+    submission.save()         
+    return HttpResponseRedirect(reverse(viewname='onlinecourse:show_exam_result', args=(course.id,submission.id ))) 
 
 
 
+def show_exam_result(request, course_id, submission_id):
+    course  =  get_object_or_404(Course, pk=course_id)
+    submission =      get_object_or_404(Submission, pk=submission_id)
+    total =  0
+    total_user =  0
+    q_results = {}
+    c_submits = {}
+    c_results = {}
+    for q in course.question_set.all():
+        q_total = 0
+        q_total_user = 0
+        for c in q.choice_set.all():
+            q_total += 1  
+            temp_right = c.is_correct
+            count =  submission.choices.filter(id = c.id).count()
+
+            temp_user  = count > 0 
+            c_submits[c.id] = temp_user
+            c_results[c.id] = temp_user == temp_right
+            if temp_user == temp_right:
+                q_total_user += 1        
+        q_results[q.id] =  q.grade*(q_total_user / q_total)
+        total += q.grade 
+        total_user  += q_results[q.id]
+    context  = {}
+    context["course"]  =  course
+    context["submission"]  =  submission
+    #context["choices"]  =  submission.chocies.all()
+    context["total"]  =  total
+    context["total_user"]  =  total_user
+    context["q_results"]  =  q_results
+    context["c_submits"]  =  c_submits
+    context["c_results"]  =  c_results
+    context["grade"]  =  int((total_user/total)*100)
+    #print(vars(submission.chocies))
+    #user = request.user
+    #return render(request, 'onlinecourse/show_exam_result.html', context)
+    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
