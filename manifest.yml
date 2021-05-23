@@ -1,11 +1,11 @@
   applications:
-  - name: DBonlinecourse
+  - name: onlinecourse
     routes:
-      - route: DBonlinecourse.eu-gb.mybluemix.net
+      - route: onlinecourse.eu-gb.mybluemix.net
     memory: 128M
     buildpack: python_buildpack
   - name: onlinecourse-nginx
     routes:
-      - route: DBonlinecourse.eu-gb.mybluemix.net/static
+      - route: onlinecourse.eu-gb.mybluemix.net/static
     memory: 128M
     buildpack: staticfile_buildpack
